@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build",
+            "command": "C:/Users/Joel/Documents/esp-idf/export.bat & idf.py build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "shell",
+            "label": "flash",
+            "command": "C:/Users/Joel/Documents/esp-idf/export.bat & idf.py -p COM3 flash",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "monitor",
+            "command": "C:/Users/Joel/Documents/esp-idf/export.bat & idf.py -p COM3 monitor",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

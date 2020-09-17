@@ -1,0 +1,6 @@
+build
+.vscode/BROWSE.VC.DB
+.gdbinit.ci
+sdkconfig.ci
+sdkconfig.old
+sdkconfig

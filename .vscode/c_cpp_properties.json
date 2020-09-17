@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "ESP32-Win",
+            "includePath": [
+                "${workspaceFolder}/main/*",
+                "${workspaceFolder}/build/*",
+                "${env:IDF_PATH}/components/**",
+                "${env:IDF_TOOLS_PATH}/tools/**"
+            ],
+            "intelliSenseMode": "${default}",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "${env:IDF_PATH}/components/**",
+                    "${env:IDF_TOOLS_PATH}/tools/**"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "compilerPath": ""
+        }
+    ],
+    "version": 4
+}
