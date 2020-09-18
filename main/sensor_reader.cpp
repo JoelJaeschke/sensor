@@ -38,15 +38,15 @@ void SensorReader::setup() {
     gpio_intr_enable(RECEIVER_PIN_RISING);
     
     // Install ISR Service
-    gpio_install_isr_service(ESP_INTR_FLAG_LOWMED);
+    // gpio_install_isr_service(ESP_INTR_FLAG_LOWMED);
     
-    // Register ISR for for receiver state change (falling)
-    gpio_set_intr_type(RECEIVER_PIN_FALLING, GPIO_INTR_NEGEDGE);
-    gpio_isr_handler_add(RECEIVER_PIN_FALLING, entering_sensor, (void*)this);
+    // // Register ISR for for receiver state change (falling)
+    // gpio_set_intr_type(RECEIVER_PIN_FALLING, GPIO_INTR_NEGEDGE);
+    // gpio_isr_handler_add(RECEIVER_PIN_FALLING, entering_sensor, (void*)this);
 
-    // Register ISR for for receiver state change (falling)
-    gpio_set_intr_type(RECEIVER_PIN_RISING, GPIO_INTR_POSEDGE);
-    gpio_isr_handler_add(RECEIVER_PIN_RISING, leaving_sensor, (void*)this);
+    // // Register ISR for for receiver state change (falling)
+    // gpio_set_intr_type(RECEIVER_PIN_RISING, GPIO_INTR_POSEDGE);
+    // gpio_isr_handler_add(RECEIVER_PIN_RISING, leaving_sensor, (void*)this);
 
     // Setup PWM signal for diode (see: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/ledc.html#ledc-api-configure-channel)
     // Configure timer 
@@ -66,7 +66,7 @@ void SensorReader::setup() {
     channel_conf.channel = LEDC_CHANNEL_0;
     channel_conf.intr_type = LEDC_INTR_DISABLE;
     channel_conf.timer_sel = LEDC_TIMER_0;
-    channel_conf.duty = 96;
+    channel_conf.duty = 200;
 
     ledc_channel_config(&channel_conf);
 
@@ -75,18 +75,21 @@ void SensorReader::setup() {
 
 void SensorReader::process() {
     // If pass is complete, reset and increment passes
-    if (m_pass_complete) {
-        int64_t delta = m_end_pass - m_start_pass;
+    // if (m_pass_complete) {
+    //     int64_t delta = m_end_pass - m_start_pass;
 
-        if (delta > PASSING_THRESHOLD) m_num_passes++;
+    //     if (delta > PASSING_THRESHOLD) m_num_passes++;
 
-        m_start_pass = 0;
-        m_end_pass = 0;
-        m_pass_complete = false;
-        
-        printf("Delta between start and end: %lld\n", m_end_pass - m_start_pass);
-        printf("Pass completed!\n");
-    }
+    //     m_start_pass = 0;
+    //     m_end_pass = 0;
+    //     m_pass_complete = false;
+
+    //     printf("Delta between start and end: %lld\n", m_end_pass - m_start_pass);
+    //     printf("Pass completed!\n");
+    // }
+
+    int lvl = gpio_get_level(RECEIVER_PIN_RISING);
+    printf("Reading level: %d\n", lvl);
 
     // Sleep for 50 milliseconds after each process() call
     vTaskDelay(50 / portTICK_PERIOD_MS);
