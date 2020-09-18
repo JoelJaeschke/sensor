@@ -27,6 +27,15 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "type": "shell",
+            "label": "build flash mon",
+            "command": "C:/Users/Joel/Documents/esp-idf/export.bat & idf.py -p COM3 build flash monitor",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }
