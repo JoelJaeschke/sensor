@@ -5,13 +5,16 @@
             "includePath": [
                 "${workspaceFolder}/main/*",
                 "${workspaceFolder}/build/*",
+                "${workspaceFolder}/build/config/*",
                 "${env:IDF_PATH}/components/**",
                 "${env:IDF_TOOLS_PATH}/tools/**"
             ],
             "intelliSenseMode": "${default}",
             "browse": {
                 "path": [
-                    "${workspaceFolder}/**",
+                    "${workspaceFolder}/main/*",
+                    "${workspaceFolder}/build/*",
+                    "${workspaceFolder}/build/config/*",
                     "${env:IDF_PATH}/components/**",
                     "${env:IDF_TOOLS_PATH}/tools/**"
                 ],

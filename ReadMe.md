@@ -11,6 +11,6 @@ are too expensive and also do not fit our use case quite right, so we set out to
 ## ToDo
 - [x] Basic architectural considerations
 - [x] First working prototype
-- [] Debounce receiver signal to avoid triggering interrupts multiple times
+- [x] Debounce receiver signal to avoid triggering interrupts multiple times
 - [] Add persistent storage facility 
 - [] Mesh networking between multiple sensors
