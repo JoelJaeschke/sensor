@@ -22,18 +22,21 @@ namespace {
     struct GpioState global_gpio_state {0, PinState::OFF};
 
     void debounce_isr(void* arg) {
-        int lvl = gpio_get_level(RECEIVER_PIN);
-        
+        int lvl = !gpio_get_level(RECEIVER_PIN);
+
         // Add one to signal count, if lvl is 0
-        global_gpio_state.signal_count += (!lvl)*1;
+        global_gpio_state.signal_count += lvl*1;
         
         // Subtract one from signal count if lvl is 1
         global_gpio_state.signal_count -= (!lvl)*1;
         
+        // Limit signal count to max NUM_ACTIVE
+        global_gpio_state.signal_count = global_gpio_state.signal_count > NUM_ACTIVE ? NUM_ACTIVE : global_gpio_state.signal_count;
+
         // If signal_count >= NUM_ACTIVE, activate pin
         // Else deactivate pin
         // TODO: Replace if with some bit shift magic
-        if (global_gpio_state.signal_count >= NUM_ACTIVE) {
+        if (global_gpio_state.signal_count == NUM_ACTIVE) {
             global_gpio_state.pin_state = PinState::ON;
         } else {
             global_gpio_state.pin_state = PinState::OFF;
@@ -78,33 +81,40 @@ void SensorReader::setup() {
 
     // Setup timer to read receiver state every 5 milliseconds
     // Update internal counter to reflect number of positive reads
+    esp_timer_handle_t timer_handle;
     esp_timer_create_args_t timer_conf;
     timer_conf.name = "debounceTimer";
     timer_conf.arg = NULL;
     timer_conf.callback = debounce_isr;
     timer_conf.dispatch_method = ESP_TIMER_TASK;
 
-    esp_timer_handle_t timer_handle;
-
     esp_timer_create(&timer_conf, &timer_handle);
 
-    esp_timer_start_periodic(timer_handle, 5000);
+    esp_timer_start_periodic(timer_handle, CHECK_INTERVAL);
 
     return;
 }
 
 void SensorReader::process() {
-    printf("Running process! Global state has count: %d.\n", global_gpio_state.signal_count);
-    int lvl = gpio_get_level(RECEIVER_PIN);
-    printf("Receiver pin is on: %s.\n", lvl == 1 ? "false" : "true");
-    
-    // if (global_gpio_state.pin_state == PinState::ON) {
-    //     printf("Receiver is on! Global state has count: %d.\n", global_gpio_state.signal_count);
-    // } else {
-    //     printf("Receiver is off!\n");
-    // }
+    // If sensor was previously off and is now turned on, we set previously on and
+    // start a timer
+    if (m_previously_on == false && global_gpio_state.pin_state == PinState::ON) {
+        m_previously_on = true;
+        m_start_time = esp_timer_get_time();
+        m_end_time = 0;
+    }
 
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    // If sensor was previously on and is now turned off, we set previously on to false
+    // and stop the timer
+    if (m_previously_on == true && global_gpio_state.pin_state == PinState::OFF) {
+        m_previously_on = false;
+        m_end_time = esp_timer_get_time();
+        m_num_passes++;
+        uint64_t duration = m_end_time - m_start_time;
+    }
+
+    printf("Number of passes: %lld\n", m_num_passes);
+    vTaskDelay(20 / portTICK_PERIOD_MS);
 
     return;
 }
