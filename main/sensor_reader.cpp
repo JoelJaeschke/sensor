@@ -10,35 +10,12 @@
 // --- Public implementation --- //
 SensorReader::SensorReader():   m_num_passes(0),
                                 m_current_pass({0, 0, false}),
-                                m_receiver_debouncer(Debouncer(NUM_ACTIVE, CHECK_INTERVAL)) {};
+                                m_receiver_debouncer(Debouncer(NUM_ACTIVE, CHECK_INTERVAL, RECEIVER_PIN)),
+                                m_diode_driver(PwmDriver(DIODE_FREQUENCY, IR_DIODE_PIN)) {};
 
 SensorReader::~SensorReader() {};
 
 void SensorReader::setup() {
-    // Setup PWM signal for diode (see: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/ledc.html#ledc-api-configure-channel)
-    // Configure timer 
-    ledc_timer_config_t diode_timer_conf;
-    diode_timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    diode_timer_conf.duty_resolution = LEDC_TIMER_8_BIT;
-    diode_timer_conf.timer_num = LEDC_TIMER_0;
-    diode_timer_conf.freq_hz = DIODE_FREQUENCY;
-    diode_timer_conf.clk_cfg = LEDC_AUTO_CLK;
-
-    ledc_timer_config(&diode_timer_conf);
-
-    // Configure channel
-    ledc_channel_config_t channel_conf;
-    channel_conf.gpio_num = IR_DIODE_PIN;
-    channel_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
-    channel_conf.channel = LEDC_CHANNEL_0;
-    channel_conf.intr_type = LEDC_INTR_DISABLE;
-    channel_conf.timer_sel = LEDC_TIMER_0;
-    channel_conf.duty = 200;
-
-    ledc_channel_config(&channel_conf);
-
-    m_receiver_debouncer.registerGpioPin(RECEIVER_PIN);
-
     return;
 }
 

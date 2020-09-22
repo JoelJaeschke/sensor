@@ -33,17 +33,17 @@ namespace {
 }
 
 
-Debouncer::Debouncer(uint16_t threshhold, uint64_t check_interval)
+Debouncer::Debouncer(uint16_t threshhold, uint64_t check_interval, gpio_num_t pin)
 {
     // Configure global GpioState Struct
     debouncer_gpio_state.threshhold = threshhold;
     debouncer_gpio_state.check_interval = check_interval;
-};
-
-void Debouncer::registerGpioPin(gpio_num_t pin) {
-    // Configure remaining global GpioState struct
     debouncer_gpio_state.pin = pin;
 
+    registerGpioPin();
+};
+
+void Debouncer::registerGpioPin() {
     // Setup gpio pin
     gpio_reset_pin(debouncer_gpio_state.pin);
     gpio_set_direction(debouncer_gpio_state.pin, GPIO_MODE_INPUT);

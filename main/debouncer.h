@@ -18,10 +18,12 @@ struct GpioState {
 
 class Debouncer {
     public:
-        Debouncer(uint16_t threshhold, uint64_t check_interval);
+        Debouncer(uint16_t threshhold, uint64_t check_interval, gpio_num_t pin);
         ~Debouncer();
-        void registerGpioPin(gpio_num_t pin);
         PinState getPinState();
+    private:
+        void registerGpioPin();
+
 };
 
 #endif

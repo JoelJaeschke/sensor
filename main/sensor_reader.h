@@ -6,6 +6,7 @@
 #include "driver/gpio.h"
 
 #include "debouncer.h"
+#include "pwm_driver.h"
 
 #define RECEIVER_PIN GPIO_NUM_23
 #define LED_CHANNEL 0
@@ -36,6 +37,7 @@ class SensorReader {
         uint64_t m_num_passes;
         struct CurrentPass m_current_pass;
         Debouncer m_receiver_debouncer;
+        PwmDriver m_diode_driver;
 };
 
 #endif
