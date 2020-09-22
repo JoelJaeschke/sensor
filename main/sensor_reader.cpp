@@ -46,6 +46,8 @@ namespace {
 
 // --- Public implementation --- //
 SensorReader::SensorReader():   m_num_passes(0),
+                                m_start_time(0),
+                                m_end_time(0),
                                 m_previously_on(false) {};
 
 SensorReader::~SensorReader() {};
@@ -99,22 +101,33 @@ void SensorReader::process() {
     // If sensor was previously off and is now turned on, we set previously on and
     // start a timer
     if (m_previously_on == false && global_gpio_state.pin_state == PinState::ON) {
-        m_previously_on = true;
-        m_start_time = esp_timer_get_time();
-        m_end_time = 0;
+        startPass();
     }
 
     // If sensor was previously on and is now turned off, we set previously on to false
     // and stop the timer
     if (m_previously_on == true && global_gpio_state.pin_state == PinState::OFF) {
-        m_previously_on = false;
-        m_end_time = esp_timer_get_time();
-        m_num_passes++;
-        uint64_t duration = m_end_time - m_start_time;
+        endPass();
     }
 
-    printf("Number of passes: %lld\n", m_num_passes);
-    vTaskDelay(20 / portTICK_PERIOD_MS);
-
     return;
+}
+
+void SensorReader::startPass() {
+    m_previously_on = true;
+    m_start_time = esp_timer_get_time();
+}
+
+void SensorReader::endPass() {
+    m_end_time = esp_timer_get_time();
+    uint64_t duration = (m_end_time - m_start_time) / 1000;
+    m_num_passes++;
+
+    m_previously_on = false;
+    m_end_time = 0;
+    m_start_time = 0;
+
+    if (duration >= PASSING_THRESHOLD) {
+        printf("Pass took %lld milliseconds.\n", duration);
+    }
 }

@@ -13,7 +13,9 @@ void sensor_reader_task(void* param) {
 
     for (;;) {
         sr.process();
-        // TODO: Periodically send number of people who passed by somewhere
+        
+        // Yield
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
@@ -25,8 +27,8 @@ void default_feed_task(void* param) {
 
 void app_main(void)
 {
-    printf("Starting sensor node! Yadda\n");
-    
+    printf("Starting sensor node!\n");
+
     // Pin Sensor reading to core 0
     xTaskCreatePinnedToCore(
         sensor_reader_task,
