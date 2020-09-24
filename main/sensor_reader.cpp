@@ -3,11 +3,11 @@
 #include "driver/timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 
 #include "sensor_reader.h"
 #include "debouncer.h"
 
-// --- Public implementation --- //
 SensorReader::SensorReader():   m_num_passes(0),
                                 m_current_pass({0, 0, false}),
                                 m_receiver_debouncer(Debouncer(NUM_ACTIVE, CHECK_INTERVAL, RECEIVER_PIN)),
@@ -47,13 +47,13 @@ void SensorReader::startPass() {
 void SensorReader::endPass() {
     m_current_pass.end_time = esp_timer_get_time();
     uint64_t duration = (m_current_pass.end_time - m_current_pass.start_time) / 1000;
-    m_num_passes++;
 
     m_current_pass.previously_on = false;
     m_current_pass.end_time = 0;
     m_current_pass.start_time = 0;
 
     if (duration >= PASSING_THRESHOLD) {
-        printf("Pass took %lld milliseconds.\n", duration);
+        m_num_passes++;
+        printf("Reader: Pass took %lld milliseconds.\n", duration);
     }
 }
