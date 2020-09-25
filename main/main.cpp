@@ -1,13 +1,17 @@
 #include <stdio.h>
 #include <memory>
+
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "esp_log.h"
 
 #include "sensor_reader.h"
 #include "config_manager.h"
 #include "ipc_struct.h"
+
+static const char* TAG = "Main";
 
 extern "C" {    
     void app_main();
@@ -17,12 +21,13 @@ extern "C" {
 void sensor_reader_task(void* param) {
     ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
 
+    ESP_LOGI(TAG, "Initializing sensor reader");
     SensorReader sr;
 
     for (;;) {
         auto pass = sr.process();
         if (pass) {
-            printf("Reader (Task): Pass registered at %lld wit duration of %d milliseconds!\n", pass->time, pass->duration);
+            ESP_LOGV(TAG, "Pass registered at %lld wit duration of %d milliseconds", pass->time, pass->duration);
             xQueueSendToFront(config->passQueue, &pass.value(), 10);
         }
 
@@ -35,15 +40,16 @@ void pass_printer_task(void* param) {
     ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
 
     Pass pass;
-    uint64_t previous_duration = 0;
+    uint16_t previous_duration = 0;
 
     for (;;) {
 
         xQueueReceive(config->passQueue, &pass, 10);
 
-        if (pass.duration > previous_duration) {
+
+        if (pass.duration != previous_duration) {
             previous_duration = pass.duration;
-            printf("Printer: Pass registered at %lld wit duration of %d milliseconds!\n", pass.time, pass.duration);
+            ESP_LOGV(TAG, "Pass registered at %lld wit duration of %d milliseconds", pass.time, pass.duration);
         }
 
         // Yield
@@ -59,14 +65,17 @@ void default_feed_task(void* param) {
 
 void app_main(void)
 {
-    printf("Starting sensor node!\n");
+    ESP_LOGI(TAG, "Starting sensor node!");
 
+    ESP_LOGI(TAG, "Initializing queue's");
     QueueHandle_t passQueue = xQueueCreate(5, sizeof(Pass));
 
-    ConfigManager* config = new ConfigManager();
 
+    ESP_LOGI(TAG, "Initializing config manager");
+    ConfigManager* config = new ConfigManager();
     config->passQueue = passQueue;
     
+    ESP_LOGI(TAG, "Initializing task's");
     // Pin Sensor reading to core 0
     xTaskCreatePinnedToCore(
         sensor_reader_task,

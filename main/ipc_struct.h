@@ -4,7 +4,7 @@
 #include <cstdint>
 
 typedef struct Pass {
-    uint64_t time;
+    int64_t time;
     uint16_t duration;
 } Pass;
 

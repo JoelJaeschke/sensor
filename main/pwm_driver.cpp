@@ -1,10 +1,16 @@
+#include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "driver/timer.h"
 
 #include "pwm_driver.h"
 
+static const char* TAG = "PwmDriver";
+
 PwmDriver::PwmDriver(uint32_t frequency, gpio_num_t pin) {
+    ESP_LOGV(TAG, "PwmDriver ctor called");
+
+    ESP_LOGV(TAG, "Initializing ledc timer config");
     // Setup PWM signal for diode (see: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/ledc.html#ledc-api-configure-channel)
     // Configure timer 
     ledc_timer_config_t diode_timer_conf;
@@ -14,8 +20,9 @@ PwmDriver::PwmDriver(uint32_t frequency, gpio_num_t pin) {
     diode_timer_conf.freq_hz = frequency;
     diode_timer_conf.clk_cfg = LEDC_AUTO_CLK;
 
-    ledc_timer_config(&diode_timer_conf);
+    ESP_ERROR_CHECK(ledc_timer_config(&diode_timer_conf));
 
+    ESP_LOGV(TAG, "Initializing ledc channel config");
     // Configure channel
     ledc_channel_config_t channel_conf;
     channel_conf.gpio_num = pin;
@@ -26,7 +33,9 @@ PwmDriver::PwmDriver(uint32_t frequency, gpio_num_t pin) {
     channel_conf.duty = 200;
     channel_conf.hpoint = 0;
 
-    ledc_channel_config(&channel_conf);
+    ESP_ERROR_CHECK(ledc_channel_config(&channel_conf));
 };
 
-PwmDriver::~PwmDriver() {};
+PwmDriver::~PwmDriver() {
+    ESP_LOGV(TAG, "PwmDriver dtor called");
+};

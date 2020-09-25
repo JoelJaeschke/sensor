@@ -16,12 +16,12 @@
 #define DIODE_FREQUENCY 38000
 #define PASSING_THRESHOLD 250
 #define IR_DIODE_PIN GPIO_NUM_18
-#define NUM_ACTIVE 4
+#define NUM_ACTIVE 6
 #define CHECK_INTERVAL 5000
 
 typedef struct CurrentPass {
-    uint64_t start_time;
-    uint64_t end_time;
+    int64_t start_time;
+    int64_t end_time;
     bool previously_on;
 } CurrentPass;
 

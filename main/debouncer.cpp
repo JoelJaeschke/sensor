@@ -1,8 +1,11 @@
+#include "esp_log.h"
 #include "driver/timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #include "debouncer.h"
+
+static const char* TAG = "Debouncer";
 
 namespace {
     struct GpioState debouncer_gpio_state {GPIO_NUM_0, PinState::OFF, 0, 0, 0};
@@ -35,20 +38,27 @@ namespace {
 
 Debouncer::Debouncer(uint16_t threshhold, uint64_t check_interval, gpio_num_t pin)
 {
+    ESP_LOGV(TAG, "Debouncer ctor called");
     // Configure global GpioState Struct
     debouncer_gpio_state.threshhold = threshhold;
     debouncer_gpio_state.check_interval = check_interval;
     debouncer_gpio_state.pin = pin;
 
+    ESP_LOGV(TAG, "Registering debouncer gpio");
     registerGpioPin();
-};
+    ESP_LOGV(TAG, "Registered debouncer gpio");
+}
+
+Debouncer::~Debouncer() {
+    ESP_LOGV(TAG, "Debouncer dtor called");
+}
 
 void Debouncer::registerGpioPin() {
     // Setup gpio pin
-    gpio_reset_pin(debouncer_gpio_state.pin);
-    gpio_set_direction(debouncer_gpio_state.pin, GPIO_MODE_INPUT);
-    gpio_set_pull_mode(debouncer_gpio_state.pin, GPIO_PULLUP_ONLY);
-    gpio_intr_disable(debouncer_gpio_state.pin);
+    ESP_ERROR_CHECK(gpio_reset_pin(debouncer_gpio_state.pin));
+    ESP_ERROR_CHECK(gpio_set_direction(debouncer_gpio_state.pin, GPIO_MODE_INPUT));
+    ESP_ERROR_CHECK(gpio_set_pull_mode(debouncer_gpio_state.pin, GPIO_PULLUP_ONLY));
+    ESP_ERROR_CHECK(gpio_intr_disable(debouncer_gpio_state.pin));
 
     // Setup timer
     esp_timer_handle_t timer_handle;
@@ -59,12 +69,13 @@ void Debouncer::registerGpioPin() {
     timer_conf.dispatch_method = ESP_TIMER_TASK;
 
     // create timer
-    esp_timer_create(&timer_conf, &timer_handle);
+    ESP_ERROR_CHECK(esp_timer_create(&timer_conf, &timer_handle));
 
     // start timer
-    esp_timer_start_periodic(timer_handle, debouncer_gpio_state.check_interval);
-};
+    ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle, debouncer_gpio_state.check_interval));
+}
 
 PinState Debouncer::getPinState() {
+    ESP_LOGV(TAG, "Getting debouncer pin state: %s", debouncer_gpio_state.pin_state == PinState::ON ? "on" : "off");
     return debouncer_gpio_state.pin_state;
 }
