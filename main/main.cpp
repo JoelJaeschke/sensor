@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <memory>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -6,6 +7,7 @@
 
 #include "sensor_reader.h"
 #include "config_manager.h"
+#include "ipc_struct.h"
 
 extern "C" {    
     void app_main();
@@ -16,13 +18,13 @@ void sensor_reader_task(void* param) {
     ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
 
     SensorReader sr;
-    sr.setup();
 
     for (;;) {
-        sr.process();
-        
-        uint64_t num_passes = sr.getNumberOfPasses();
-        xQueueSendToFront(config->passQueue, &num_passes, 10);
+        auto pass = sr.process();
+        if (pass) {
+            printf("Reader (Task): Pass registered at %lld wit duration of %d milliseconds!\n", pass->time, pass->duration);
+            xQueueSendToFront(config->passQueue, &pass.value(), 10);
+        }
 
         // Yield
         vTaskDelay(10 / portTICK_PERIOD_MS);
@@ -31,15 +33,17 @@ void sensor_reader_task(void* param) {
 
 void pass_printer_task(void* param) {
     ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
-    uint64_t previous_pass_num = 0;
+
+    Pass pass;
+    uint64_t previous_duration = 0;
 
     for (;;) {
-        uint64_t num_passes;
-        xQueueReceive(config->passQueue, &num_passes, 10);
 
-        if (num_passes > previous_pass_num) {
-            previous_pass_num = num_passes;
-            printf("Printer: Number of passes is %lld.\n", num_passes);
+        xQueueReceive(config->passQueue, &pass, 10);
+
+        if (pass.duration > previous_duration) {
+            previous_duration = pass.duration;
+            printf("Printer: Pass registered at %lld wit duration of %d milliseconds!\n", pass.time, pass.duration);
         }
 
         // Yield
@@ -57,9 +61,10 @@ void app_main(void)
 {
     printf("Starting sensor node!\n");
 
-    QueueHandle_t passQueue = xQueueCreate(10, sizeof(uint64_t));
+    QueueHandle_t passQueue = xQueueCreate(5, sizeof(Pass));
 
     ConfigManager* config = new ConfigManager();
+
     config->passQueue = passQueue;
     
     // Pin Sensor reading to core 0

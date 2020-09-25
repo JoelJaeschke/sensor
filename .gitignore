@@ -4,3 +4,6 @@ build
 sdkconfig.ci
 sdkconfig.old
 sdkconfig
+VC_DATABASE.DB
+VC_DATABASE.DB-shm
+VC_DATABASE.DB-wal

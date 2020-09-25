@@ -6,7 +6,6 @@
 #include "freertos/queue.h"
 
 #include "sensor_reader.h"
-#include "debouncer.h"
 
 SensorReader::SensorReader():   m_num_passes(0),
                                 m_current_pass({0, 0, false}),
@@ -15,11 +14,7 @@ SensorReader::SensorReader():   m_num_passes(0),
 
 SensorReader::~SensorReader() {};
 
-void SensorReader::setup() {
-    return;
-}
-
-void SensorReader::process() {
+std::optional<Pass> SensorReader::process() {
     // If sensor was previously off and is now turned on, we set previously on and
     // start a timer
     if (m_current_pass.previously_on == false && m_receiver_debouncer.getPinState() == PinState::ON) {
@@ -29,10 +24,10 @@ void SensorReader::process() {
     // If sensor was previously on and is now turned off, we set previously on to false
     // and stop the timer
     if (m_current_pass.previously_on == true && m_receiver_debouncer.getPinState() == PinState::OFF) {
-        endPass();
+        return endPass();
     }
 
-    return;
+    return std::nullopt;
 }
 
 uint64_t SensorReader::getNumberOfPasses() {
@@ -44,9 +39,9 @@ void SensorReader::startPass() {
     m_current_pass.start_time = esp_timer_get_time();
 }
 
-void SensorReader::endPass() {
+std::optional<Pass> SensorReader::endPass() {
     m_current_pass.end_time = esp_timer_get_time();
-    uint64_t duration = (m_current_pass.end_time - m_current_pass.start_time) / 1000;
+    uint16_t duration = static_cast<uint16_t>((m_current_pass.end_time - m_current_pass.start_time) / 1000);
 
     m_current_pass.previously_on = false;
     m_current_pass.end_time = 0;
@@ -54,6 +49,12 @@ void SensorReader::endPass() {
 
     if (duration >= PASSING_THRESHOLD) {
         m_num_passes++;
-        printf("Reader: Pass took %lld milliseconds.\n", duration);
+        Pass pass = {m_current_pass.end_time, duration};
+        
+        printf("Reader: Pass registered at %lld wit duration of %d milliseconds!\n", pass.time, pass.duration);
+        
+        return std::optional<Pass>{pass};
     }
+
+    return std::nullopt;
 }

@@ -9,7 +9,7 @@
                 "${env:IDF_PATH}/components/**",
                 "${env:IDF_TOOLS_PATH}/tools/**"
             ],
-            "intelliSenseMode": "${default}",
+            "intelliSenseMode": "gcc-x64",
             "browse": {
                 "path": [
                     "${workspaceFolder}/main/*",
@@ -18,11 +18,12 @@
                     "${env:IDF_PATH}/components/**",
                     "${env:IDF_TOOLS_PATH}/tools/**"
                 ],
-                "limitSymbolsToIncludedHeaders": false
+                "limitSymbolsToIncludedHeaders": false,
+                "databaseFilename": "${workspaceFolder}/.vscode/VC_DATABASE.db"
             },
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "compilerPath": ""
+            "compilerPath": "${env:IDF_TOOLS_PATH}/tools/xtensa-esp32-elf/esp-2020r2-8.2.0/xtensa-esp32-elf/bin/xtensa-esp32-elf-g++.exe"
         }
     ],
     "version": 4

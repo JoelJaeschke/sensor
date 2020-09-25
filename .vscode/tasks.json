@@ -36,6 +36,15 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "type": "shell",
+            "label": "clean",
+            "command": "C:/Users/Joel/Documents/esp-idf/export.bat & idf.py clean",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

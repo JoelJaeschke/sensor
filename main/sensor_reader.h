@@ -1,12 +1,14 @@
 #ifndef __SENSOR_READER_H
 #define __SENSOR_READER_H
 
-#include <stdint.h>
+#include <cstdint>
+#include <optional>
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 
 #include "debouncer.h"
 #include "pwm_driver.h"
+#include "ipc_struct.h"
 
 #define RECEIVER_PIN GPIO_NUM_23
 #define LED_CHANNEL 0
@@ -17,25 +19,24 @@
 #define NUM_ACTIVE 4
 #define CHECK_INTERVAL 5000
 
-struct CurrentPass {
+typedef struct CurrentPass {
     uint64_t start_time;
     uint64_t end_time;
     bool previously_on;
-};
+} CurrentPass;
 
 class SensorReader {
     public:
         SensorReader();
         ~SensorReader();
-        void setup();
-        void process();
+        std::optional<Pass> process();
         uint64_t getNumberOfPasses();
     private:
         void startPass();
-        void endPass();
+        std::optional<Pass> endPass();
 
         uint64_t m_num_passes;
-        struct CurrentPass m_current_pass;
+        CurrentPass m_current_pass;
         Debouncer m_receiver_debouncer;
         PwmDriver m_diode_driver;
 };
