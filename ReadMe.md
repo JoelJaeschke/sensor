@@ -12,5 +12,6 @@ are too expensive and also do not fit our use case quite right, so we set out to
 - [x] Basic architectural considerations
 - [x] First working prototype
 - [x] Debounce receiver signal to avoid triggering interrupts multiple times
-- [] Add persistent storage facility 
+- [] Add persistent storage facility
+    -> Change partition table
 - [] Mesh networking between multiple sensors

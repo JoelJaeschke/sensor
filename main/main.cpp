@@ -9,6 +9,7 @@
 
 #include "sensor_reader.h"
 #include "config_manager.h"
+#include "persistent_store.h"
 #include "ipc_struct.h"
 
 static const char* TAG = "Main";
@@ -40,21 +41,34 @@ void pass_printer_task(void* param) {
     ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
 
     Pass pass;
-    uint16_t previous_duration = 0;
 
     for (;;) {
-
-        xQueueReceive(config->passQueue, &pass, 10);
-
-
-        if (pass.duration != previous_duration) {
-            previous_duration = pass.duration;
+        if (xQueueReceive(config->passQueue, &pass, 10)) {
             ESP_LOGV(TAG, "Pass registered at %lld wit duration of %d milliseconds", pass.time, pass.duration);
         }
 
         // Yield
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+}
+
+void pass_store_task(void* param) {
+    ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
+
+    ESP_LOGI(TAG, "Initializing persistent store");
+    PersistentStore store;
+    Pass pass;
+
+    for (;;) {
+        if (xQueueReceive(config->passQueue, &pass, 10)) {
+            ESP_LOGV(TAG, "Adding pass: Time -> %lld, duration -> %d", pass.time, pass.duration);
+            store.addPass(&pass);
+        };
+
+        store.printLog();
+        // Yield
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+    };
 }
 
 void default_feed_task(void* param) {
@@ -69,7 +83,6 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Initializing queue's");
     QueueHandle_t passQueue = xQueueCreate(5, sizeof(Pass));
-
 
     ESP_LOGI(TAG, "Initializing config manager");
     ConfigManager* config = new ConfigManager();
@@ -87,17 +100,28 @@ void app_main(void)
         0
     );
 
-    // Pin printer task to core 0
+    // // Pin printer task to core 0
+    // xTaskCreatePinnedToCore(
+    //     pass_printer_task,
+    //     "PassPrinterTask",
+    //     10000,
+    //     reinterpret_cast<void*>(config),
+    //     1,
+    //     NULL,
+    //     0
+    // );
+    
+    // Pin store task to core 0
     xTaskCreatePinnedToCore(
-        pass_printer_task,
-        "PassPrinterTask",
+        pass_store_task,
+        "PassStoreTask",
         10000,
         reinterpret_cast<void*>(config),
         1,
         NULL,
-        0
+        1
     );
-    
+
     // Create default Task to avoid watchdog starvation
     xTaskCreatePinnedToCore(
         default_feed_task,
