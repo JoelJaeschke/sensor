@@ -7,11 +7,3 @@ at work. We will investigate multiple measures, for example:
  - Motivational posters (sixth floor equals 1.6% of the Zugspitze)
 We therefor need a realiable and cheap way to track the number of people using stairs. Commerically available solutions
 are too expensive and also do not fit our use case quite right, so we set out to do it ourselfes.
-
-## ToDo
-- [x] Basic architectural considerations
-- [x] First working prototype
-- [x] Debounce receiver signal to avoid triggering interrupts multiple times
-- [] Add persistent storage facility
-    -> Change partition table
-- [] Mesh networking between multiple sensors
