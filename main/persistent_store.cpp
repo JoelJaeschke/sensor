@@ -1,11 +1,15 @@
 #include <utility>
+#include <sys/stat.h>
+#include <sys/unistd.h>
 
 #include "esp_log.h"
 #include "esp_spiffs.h"
 
 #include "persistent_store.h"
 
-static const char* TAG = "PersistentStore";
+#define RESET true
+
+static const char* TAG = "[PersistentStore]";
 
 size_t spiffsFreeSpace(const char* partition_label) {
     size_t used = 0;
@@ -15,8 +19,8 @@ size_t spiffsFreeSpace(const char* partition_label) {
     return total - used;
 }
 
-PersistentStore::PersistentStore() {
-    ESP_LOGV(TAG, "Persistent store ctor called");
+PersistentStore::PersistentStore(): m_can_recover(false) {
+    ESP_LOGD(TAG, "Persistent store ctor called");
 
     m_spiffs_conf.base_path = "/spiffs";
     m_spiffs_conf.max_files = 1;
@@ -29,9 +33,20 @@ PersistentStore::PersistentStore() {
     size_t used = 0;
     ESP_ERROR_CHECK(esp_spiffs_info(m_spiffs_conf.partition_label, &total, &used));
 
-    ESP_LOGV(TAG, "Partition size: Total -> %d, Used -> %d", total, used);
+    ESP_LOGD(TAG, "Partition size: Total -> %d, Used -> %d", total, used);
 
-    FILE* file = fopen("/spiffs/log", "a+");
+    #if RESET == true
+        unlink("/spiffs/log");
+    #endif
+
+    struct stat st;
+    if (stat("/spiffs/log", &st) == 0) {
+        m_can_recover = true;
+    }
+
+    const char* flags = m_can_recover ? "a+b" : "w+b";
+    ESP_LOGD(TAG, "Can recover: %s. Setting flags: %s", m_can_recover ? "yes": "no", flags);
+    FILE* file = fopen("/spiffs/log", flags);
     if (file == NULL) {
         ESP_LOGE(TAG, "Failed to open file");
     }
@@ -50,7 +65,8 @@ void PersistentStore::addPass(Pass* pass) {
     bool space_left = free >= sizeof(int64_t) + sizeof(uint16_t);
 
     if (is_mounted && space_left) {
-        fprintf(m_log_file, "%lld%d", pass->time, pass->duration);
+        fwrite(&pass->time, sizeof(pass->time), 1, m_log_file);
+        fwrite(&pass->duration, sizeof(pass->duration), 1, m_log_file);
     }
 }
 
@@ -59,10 +75,21 @@ void PersistentStore::printLog() {
     fpos_t initial_position;
     fgetpos(m_log_file, &initial_position);
 
+    ESP_LOGD(TAG, "Current position: %ld", initial_position);
+
     size_t length = ftell(m_log_file);
 
+    if (length == 0) {
+        ESP_LOGD(TAG, "Log file is empty, aborting print");
+        return;
+    }
+
+    ESP_LOGD(TAG, "File length: %u", length);
+    ESP_LOGD(TAG, "Limits: %u", length);
+    ESP_LOGD(TAG, "Increment: %u", (sizeof(int64_t) + sizeof(uint16_t)));
+
     // Print all entries between start and initial position
-    for (auto i = 0; i <= length / (sizeof(int64_t) + sizeof(uint16_t)); i += (sizeof(int64_t) + sizeof(uint16_t))) {
+    for (auto i = 0; i <= length; i += (sizeof(int64_t) + sizeof(uint16_t))) {
         int64_t time;
         uint16_t duration;
 
@@ -77,7 +104,7 @@ void PersistentStore::printLog() {
 
         fread(&duration, sizeof(duration), 1, m_log_file);
 
-        printf("Pass: Time -> %lld, Duration -> %d", time, duration);
+        printf("Pass: Time -> %lld, Duration -> %d\n", time, duration);
     }
 
     // Restore initial position

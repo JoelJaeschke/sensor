@@ -14,6 +14,7 @@ class PersistentStore {
     private:
         FILE* m_log_file;
         esp_vfs_spiffs_conf_t m_spiffs_conf;
+        bool m_can_recover;
 };
 
 #endif

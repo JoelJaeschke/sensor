@@ -12,7 +12,7 @@
 #include "persistent_store.h"
 #include "ipc_struct.h"
 
-static const char* TAG = "Main";
+static const char* TAG = "[Main]";
 
 extern "C" {    
     void app_main();
@@ -28,23 +28,8 @@ void sensor_reader_task(void* param) {
     for (;;) {
         auto pass = sr.process();
         if (pass) {
-            ESP_LOGV(TAG, "Pass registered at %lld wit duration of %d milliseconds", pass->time, pass->duration);
+            ESP_LOGD("[Main - SensorReader]", "Pass registered at %lld wit duration of %d milliseconds", pass->time, pass->duration);
             xQueueSendToFront(config->passQueue, &pass.value(), 10);
-        }
-
-        // Yield
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-}
-
-void pass_printer_task(void* param) {
-    ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
-
-    Pass pass;
-
-    for (;;) {
-        if (xQueueReceive(config->passQueue, &pass, 10)) {
-            ESP_LOGV(TAG, "Pass registered at %lld wit duration of %d milliseconds", pass.time, pass.duration);
         }
 
         // Yield
@@ -59,14 +44,20 @@ void pass_store_task(void* param) {
     PersistentStore store;
     Pass pass;
 
+    ESP_LOGD("[Main - PersistentStore]", "Printing previous passes");
+    #if CONFIG_LOG_DEFAULT_LEVEL >= 4
+        store.printLog();
+    #endif
+
     for (;;) {
         if (xQueueReceive(config->passQueue, &pass, 10)) {
-            ESP_LOGV(TAG, "Adding pass: Time -> %lld, duration -> %d", pass.time, pass.duration);
+            ESP_LOGD("[Main - PersistentStore]", "Adding pass: Time -> %lld, duration -> %d", pass.time, pass.duration);
             store.addPass(&pass);
+            ESP_LOGD("[Main - PersistentStore]", "Added pass");
         };
 
-        store.printLog();
         // Yield
+        store.printLog();
         vTaskDelay(200 / portTICK_PERIOD_MS);
     };
 }
@@ -99,17 +90,6 @@ void app_main(void)
         NULL,
         0
     );
-
-    // // Pin printer task to core 0
-    // xTaskCreatePinnedToCore(
-    //     pass_printer_task,
-    //     "PassPrinterTask",
-    //     10000,
-    //     reinterpret_cast<void*>(config),
-    //     1,
-    //     NULL,
-    //     0
-    // );
     
     // Pin store task to core 0
     xTaskCreatePinnedToCore(
