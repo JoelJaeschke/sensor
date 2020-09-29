@@ -6,9 +6,9 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 
-#include "debouncer.h"
-#include "pwm_driver.h"
-#include "ipc_struct.h"
+#include "wrapper.hpp"
+#include "debouncer.hpp"
+#include "ipc_struct.hpp"
 
 #define RECEIVER_PIN GPIO_NUM_23
 #define LED_CHANNEL 0
@@ -34,11 +34,15 @@ class SensorReader {
     private:
         void startPass();
         std::optional<Pass> endPass();
+        static void updateState(void* context);
 
         uint64_t m_num_passes;
         CurrentPass m_current_pass;
+
         Debouncer m_receiver_debouncer;
-        PwmDriver m_diode_driver;
+        PwmDriver<IR_DIODE_PIN, DIODE_FREQUENCY> m_diode_driver;
+        Timer<CHECK_INTERVAL> m_timer;
+        Gpio<RECEIVER_PIN> m_receiver;
 };
 
 #endif

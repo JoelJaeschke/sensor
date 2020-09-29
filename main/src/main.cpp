@@ -7,10 +7,10 @@
 #include "freertos/queue.h"
 #include "esp_log.h"
 
-#include "sensor_reader.h"
-#include "config_manager.h"
-#include "persistent_store.h"
-#include "ipc_struct.h"
+#include "sensor_reader.hpp"
+#include "config_manager.hpp"
+#include "persistent_store.hpp"
+#include "ipc_struct.hpp"
 
 static const char* TAG = "[Main]";
 
@@ -73,6 +73,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Starting sensor node!");
 
     ESP_LOGI(TAG, "Initializing queue's");
+    // auto queue = Queue<Pass, 10>(10);
     QueueHandle_t passQueue = xQueueCreate(5, sizeof(Pass));
 
     ESP_LOGI(TAG, "Initializing config manager");

@@ -5,7 +5,7 @@
 #include "esp_log.h"
 #include "esp_spiffs.h"
 
-#include "persistent_store.h"
+#include "persistent_store.hpp"
 
 #define RESET true
 

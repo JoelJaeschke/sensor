@@ -3,7 +3,7 @@
 
 #include "esp_spiffs.h"
 
-#include "ipc_struct.h"
+#include "ipc_struct.hpp"
 
 class PersistentStore {
     public:

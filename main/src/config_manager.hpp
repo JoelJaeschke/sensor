@@ -4,6 +4,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "wrapper.hpp"
+
 class ConfigManager {
     public:
         ConfigManager();

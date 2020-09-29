@@ -6,16 +6,29 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
-#include "sensor_reader.h"
+#include "sensor_reader.hpp"
+#include "wrapper.hpp"
 
 static const char* TAG = "SensorReader";
 
+void SensorReader::updateState(void* context) {
+    SensorReader* sr = reinterpret_cast<SensorReader*>(context);
+
+    int32_t level = sr->m_receiver.level();
+    sr->m_receiver_debouncer.updateState(level);
+};
+
 SensorReader::SensorReader():   m_num_passes(0),
                                 m_current_pass({0, 0, false}),
-                                m_receiver_debouncer(Debouncer(NUM_ACTIVE, CHECK_INTERVAL, RECEIVER_PIN)),
-                                m_diode_driver(PwmDriver(DIODE_FREQUENCY, IR_DIODE_PIN)) 
+                                m_receiver_debouncer(Debouncer(PASSING_THRESHOLD)),
+                                m_diode_driver(PwmDriver<IR_DIODE_PIN, DIODE_FREQUENCY>()),
+                                m_timer(Timer<CHECK_INTERVAL>("debounceTimer")),
+                                m_receiver(Gpio<RECEIVER_PIN>(GPIO_MODE_INPUT, GPIO_PULLUP_ONLY, false))
 {
     ESP_LOGV(TAG, "SensorReader ctor called");
+
+    m_timer.registerCallback(SensorReader::updateState, this);
+    m_timer.startTimerPeriodic();
 };
 
 SensorReader::~SensorReader() {

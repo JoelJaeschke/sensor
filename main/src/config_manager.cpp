@@ -1,6 +1,6 @@
 #include "esp_log.h"
 
-#include "config_manager.h"
+#include "config_manager.hpp"
 
 static const char* TAG = "ConfigManager";
 
