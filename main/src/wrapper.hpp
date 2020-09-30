@@ -11,10 +11,10 @@
 #include "driver/ledc.h"
 #include "driver/timer.h"
 
-template <gpio_num_t Pin>
+template <gpio_num_t Pin, bool Invert = false>
 class Gpio {
     public:
-        Gpio(): m_active(true),
+        Gpio(): m_active(ESP_OK),
                 m_intr_enable(false),
                 m_pin_mode(GPIO_MODE_INPUT),
                 m_pull_mode(GPIO_PULLUP_ONLY)
@@ -25,10 +25,10 @@ class Gpio {
             esp_err_t mode_err = gpio_set_pull_mode(Pin, m_pull_mode);
             esp_err_t intr_err = gpio_intr_disable(Pin);
 
-            if (!(direction_err == ESP_OK && mode_err == ESP_OK && intr_err == ESP_OK)) m_active = false;
+            if (!(direction_err == ESP_OK && mode_err == ESP_OK && intr_err == ESP_OK)) m_active = ESP_FAIL;
         };
 
-        Gpio(gpio_mode_t pin_mode, gpio_pull_mode_t pull_mode, bool intr_enable):   m_active(true),
+        Gpio(gpio_mode_t pin_mode, gpio_pull_mode_t pull_mode, bool intr_enable):   m_active(ESP_OK),
                                                                                     m_intr_enable(intr_enable),
                                                                                     m_pin_mode(pin_mode),
                                                                                     m_pull_mode(pull_mode)
@@ -44,7 +44,7 @@ class Gpio {
                 intr_err = gpio_intr_disable(Pin);
             }
 
-            if (!(direction_err == ESP_OK && mode_err == ESP_OK && intr_err == ESP_OK)) m_active = false;
+            if (!(direction_err == ESP_OK && mode_err == ESP_OK && intr_err == ESP_OK)) m_active = ESP_FAIL;
         };
 
         ~Gpio() {
@@ -52,10 +52,18 @@ class Gpio {
         };
 
         int32_t level() {
-            return gpio_get_level(Pin);
+            if (Invert) {
+                return !gpio_get_level(Pin);
+            } else {
+                return gpio_get_level(Pin);
+            }
         };
+
+        esp_err_t isActive() {
+            return m_active;
+        }
     private:
-        bool m_active;
+        esp_err_t m_active;
         bool m_intr_enable;
         gpio_mode_t m_pin_mode;
         gpio_pull_mode_t m_pull_mode;
@@ -75,27 +83,47 @@ class Timer {
             m_can_run = false;
         };
 
-        void registerCallback(esp_timer_cb_t callback, void* arg) {
+        esp_err_t registerCallback(esp_timer_cb_t callback, void* arg) {
             m_timer_conf.callback = callback;
             m_timer_conf.arg = arg;
 
-            ESP_ERROR_CHECK(esp_timer_create(&m_timer_conf, &m_timer_handle));
+            esp_err_t create_err = esp_timer_create(&m_timer_conf, &m_timer_handle);
+            if (create_err != ESP_OK) {
+                return create_err;
+            }
 
             m_can_run = true;
+            return ESP_OK;
         };
 
-        void startTimerPeriodic() {
+        esp_err_t startTimerPeriodic() {
             if (m_can_run) {
-                ESP_ERROR_CHECK(esp_timer_start_periodic(m_timer_handle, check_interval));
+                esp_err_t start_err = esp_timer_start_periodic(m_timer_handle, check_interval);
+                if (start_err != ESP_OK) {
+                    m_can_run = false;
+                    return start_err;
+                }
+
                 m_is_running = true;
+                return ESP_OK;
             }
+
+            return ESP_FAIL;
         };
 
-        void startTimerOneshot(uint64_t timeout) {
+        esp_err_t startTimerOneshot(uint64_t timeout) {
             if (m_can_run) {
-                ESP_ERROR_CHECK(esp_timer_start_once(m_timer_handle, timeout));
+                esp_err_t start_err = esp_timer_start_once(m_timer_handle, check_interval);
+                if (start_err != ESP_OK) {
+                    m_can_run = false;
+                    return start_err;
+                }
+
                 m_is_running = true;
+                return ESP_OK;
             }
+
+            return ESP_FAIL;
         };
     private:
         esp_timer_handle_t m_timer_handle;
@@ -107,7 +135,7 @@ class Timer {
 template <gpio_num_t Pin, uint32_t frequency>
 class PwmDriver {
     public:
-        PwmDriver() {
+        PwmDriver(): m_can_run(false) {
             // Setup PWM signal for diode (see: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/ledc.html#ledc-api-configure-channel)
             // Configure timer 
             ledc_timer_config_t diode_timer_conf;
@@ -117,7 +145,8 @@ class PwmDriver {
             diode_timer_conf.freq_hz = frequency;
             diode_timer_conf.clk_cfg = LEDC_AUTO_CLK;
 
-            ESP_ERROR_CHECK(ledc_timer_config(&diode_timer_conf));
+            // There is nothing we could do here anyways, fail hard
+            esp_err_t config_err = ledc_timer_config(&diode_timer_conf);
 
             // Configure channel
             ledc_channel_config_t channel_conf;
@@ -129,19 +158,28 @@ class PwmDriver {
             channel_conf.duty = 200;
             channel_conf.hpoint = 0;
 
-            ESP_ERROR_CHECK(ledc_channel_config(&channel_conf));
+            // Also nothing we could do here, fail hard
+            esp_err_t channel_err = ledc_channel_config(&channel_conf);
+
+            if (config_err == ESP_OK && channel_err = ESP_OK) m_can_run = true;
         };
 
         ~PwmDriver() {};
+
+        esp_err_t isActive() {
+            return m_can_run == true ? ESP_OK : ESP_FAIL;
+        }
+    private:
+        bool m_can_run;
 };
 
 template<typename M, uint8_t Length>
 class Queue {
     public:
-        Queue(uint32_t default_timeout): m_timeout(default_timeout) {
-            m_queue = xQueueCreate(Length, sizeof(M));
-            m_usable = m_queue == 0 ? false : true;
-        };
+        Queue(uint32_t default_timeout):    m_timeout(default_timeout),
+                                            m_queue(xQueueCreate(Length, sizeof(M))),
+                                            m_usable(m_queue == 0 ? false : true)
+        {};
 
         ~Queue() {
             vQueueDelete(m_queue);
@@ -155,10 +193,13 @@ class Queue {
             xQueueSendToBack(m_queue, message, static_cast<TickType_t>(m_timeout));
         };
 
-        M receive() {
+        std::optional<M> receive() {
             M m;
-            xQueueReceive(m_queue, m, static_cast<TickType_t>(m_timeout));
-            return m;
+            if (xQueueReceive(m_queue, m, static_cast<TickType_t>(m_timeout))) {
+                return std::optional{m};
+            }
+            
+            return std::nullopt;
         };
     private:
         QueueHandle_t m_queue;

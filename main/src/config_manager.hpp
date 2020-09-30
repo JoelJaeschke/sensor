@@ -11,7 +11,7 @@ class ConfigManager {
         ConfigManager();
         ~ConfigManager();
 
-        QueueHandle_t passQueue;
+        Queue<Pass, 5> passQueue;
 };
 
 #endif

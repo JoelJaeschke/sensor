@@ -1,12 +1,12 @@
 #include "esp_log.h"
 
+#include "ipc_struct.hpp"
 #include "config_manager.hpp"
 
-static const char* TAG = "ConfigManager";
-
-ConfigManager::ConfigManager() {
-    ESP_LOGV(TAG, "ConfigManager ctor called");
+ConfigManager::ConfigManager(): passQueue(Queue<Pass, 5>(10))
+{
+    ESP_LOGD("ConfigManager", "ConfigManager ctor called");
 };
 ConfigManager::~ConfigManager() {
-    ESP_LOGV(TAG, "ConfigManager dtor called");
+    ESP_LOGD("ConfigManager", "ConfigManager dtor called");
 };

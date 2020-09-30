@@ -1,9 +1,8 @@
 build
-.vscode/BROWSE.VC.DB
+.vscode/VC_DATABASE.DB
+.vscode/VC_DATABASE.DB-shm
+.vscode/VC_DATABASE.DB-wal
 .gdbinit.ci
 sdkconfig.ci
 sdkconfig.old
 sdkconfig
-VC_DATABASE.DB
-VC_DATABASE.DB-shm
-VC_DATABASE.DB-wal

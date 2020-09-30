@@ -1,6 +1,6 @@
 set(srcs    "src/main.cpp"
             "src/sensor_reader.cpp"
-            "src/debouncer.cpp"
+            "src/debouncer_state.cpp"
             "src/config_manager.cpp"
             "src/persistent_store.cpp")
 

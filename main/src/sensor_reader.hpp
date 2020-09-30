@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <optional>
-#include "freertos/queue.h"
+
 #include "driver/gpio.h"
 
 #include "wrapper.hpp"
@@ -34,15 +34,13 @@ class SensorReader {
     private:
         void startPass();
         std::optional<Pass> endPass();
-        static void updateState(void* context);
+        void resetCurrentPass();
 
         uint64_t m_num_passes;
         CurrentPass m_current_pass;
 
-        Debouncer m_receiver_debouncer;
+        Debouncer<RECEIVER_PIN, CHECK_INTERVAL, PASSING_THRESHOLD> m_receiver_debouncer;
         PwmDriver<IR_DIODE_PIN, DIODE_FREQUENCY> m_diode_driver;
-        Timer<CHECK_INTERVAL> m_timer;
-        Gpio<RECEIVER_PIN> m_receiver;
 };
 
 #endif
