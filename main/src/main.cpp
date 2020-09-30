@@ -30,7 +30,7 @@ void sensor_reader_task(void* param) {
 
         if (pass) {
             ESP_LOGD("Main - SensorReader", "Pass registered at %lld wit duration of %d milliseconds", pass->time, pass->duration);
-            config->passQueue.sendToFront(pass.value());
+            config->passQueue.sendToFront(&pass.value());
         }
 
         // Yield
@@ -42,7 +42,7 @@ void pass_store_task(void* param) {
     ESP_LOGI("Main", "Initializing persistent store");
     
     ConfigManager* config = reinterpret_cast<ConfigManager*>(param);
-    Pass pass;
+    std::optional<Pass> pass;
     #if CONFIG_LOG_DEFAULT_LEVEL == 4
         PersistentStore store(true);
     #else
@@ -56,7 +56,7 @@ void pass_store_task(void* param) {
 
     // Task loop
     for (;;) {
-        auto pass = config->passQueue.receive();
+        pass = config->passQueue.receive();
 
         if (pass) {
             ESP_LOGD("Main - PersistentStore", "Adding pass: Time -> %lld, duration -> %d", pass->time, pass->duration);

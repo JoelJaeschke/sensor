@@ -2,6 +2,7 @@
 #define __WRAPPER_H
 
 #include <string>
+#include <optional>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -161,7 +162,7 @@ class PwmDriver {
             // Also nothing we could do here, fail hard
             esp_err_t channel_err = ledc_channel_config(&channel_conf);
 
-            if (config_err == ESP_OK && channel_err = ESP_OK) m_can_run = true;
+            if (config_err == ESP_OK && channel_err == ESP_OK) m_can_run = true;
         };
 
         ~PwmDriver() {};
@@ -176,26 +177,26 @@ class PwmDriver {
 template<typename M, uint8_t Length>
 class Queue {
     public:
-        Queue(uint32_t default_timeout):    m_timeout(default_timeout),
-                                            m_queue(xQueueCreate(Length, sizeof(M))),
-                                            m_usable(m_queue == 0 ? false : true)
+        Queue(uint32_t default_timeout):    m_queue(xQueueCreate(Length, sizeof(M))),
+                                            m_usable(m_queue == 0 ? false : true),
+                                            m_timeout(default_timeout)
         {};
 
         ~Queue() {
             vQueueDelete(m_queue);
         };
 
-        void sendToFront(M message) {
-            xQueueSendToFront(m_queue, message, static_cast<TickType_t>(m_timeout));
+        void sendToFront(M* message) {
+            xQueueSendToFront(m_queue, static_cast<void*>(message), static_cast<TickType_t>(m_timeout));
         };
 
-        void sendToBack(M message) {
-            xQueueSendToBack(m_queue, message, static_cast<TickType_t>(m_timeout));
+        void sendToBack(M* message) {
+            xQueueSendToBack(m_queue, static_cast<void*>(message), static_cast<TickType_t>(m_timeout));
         };
 
         std::optional<M> receive() {
             M m;
-            if (xQueueReceive(m_queue, m, static_cast<TickType_t>(m_timeout))) {
+            if (xQueueReceive(m_queue, &m, static_cast<TickType_t>(m_timeout))) {
                 return std::optional{m};
             }
             

@@ -10,7 +10,7 @@
 template<gpio_num_t Pin, uint32_t Check_Interval, uint8_t Threshhold>
 class Debouncer {
     public:
-        Debouncer():    m_gpio(Gpio<Pin, Invert = true>()),
+        Debouncer():    m_gpio(Gpio<Pin, true>()),
                         m_timer(Timer<Check_Interval>("debounceTimer")),
                         m_state(DebouncerState(Threshhold))
         {
@@ -65,7 +65,7 @@ class Debouncer {
             ESP_LOGV("Debouncer", "Callback called");
         };
 
-        Gpio<Pin, Invert = true> m_gpio;
+        Gpio<Pin, true> m_gpio;
         Timer<Check_Interval> m_timer;
         DebouncerState m_state;
 };
